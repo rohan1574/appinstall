@@ -1,0 +1,116 @@
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { StyleSheet, TextInput, View } from 'react-native'
+import { IconButton } from 'react-native-paper'
+import { useDispatch, useSelector } from 'react-redux'
+import { NEUTRAL_COLOR, PRIMARY_COLOR, SECONDARY_COLOR } from '../constants'
+import SearchContext from '../contexts/SearchContext'
+import { iconButtonStyle } from '../shared/bottom-container'
+import {
+  appLaunchFromSearch,
+  resetAppsSearchState,
+  selectAppsSearchQuery,
+  selectDisplayAllApps,
+  setAppsSearchQuery,
+  setAppsSearchResult,
+  setDisplayAllApps,
+} from '../slices/appState'
+import { selectAppsList, selectAppsLoading } from '../slices/appsList'
+import { getAppsByLabel } from '../utils/apps'
+
+const Search = () => {
+  const dispatch = useDispatch()
+  const apps = useSelector(selectAppsList)
+  const appsLoading = useSelector(selectAppsLoading)
+  const searchQuery = useSelector(selectAppsSearchQuery)
+  const displayAllApps = useSelector(selectDisplayAllApps)
+  const { searchInputRef, clearSearchInput, clearAndBlurSearchInput } = useContext(SearchContext)
+  const [placeholder, setPlaceholder] = useState('Search')
+
+  useEffect(() => {
+    setPlaceholder(appsLoading ? 'Search - Indexing...' : 'Search')
+  }, [appsLoading])
+
+  const onQueryChange = (query: string) => {
+    dispatch(setDisplayAllApps(false))
+
+    const trimmedQuery = query.trim().replace(/\./g, '\\.')
+
+    if (trimmedQuery.length === 0) {
+      dispatch(resetAppsSearchState())
+      return
+    }
+
+    // Check for only ASCII based characters
+    if (!trimmedQuery.match(/[A-z\s\d]/gi)) {
+      dispatch(setAppsSearchResult([]))
+      dispatch(setAppsSearchQuery(trimmedQuery))
+      return
+    }
+
+    dispatch(setAppsSearchResult(getAppsByLabel(apps, trimmedQuery)))
+    dispatch(setAppsSearchQuery(trimmedQuery))
+  }
+
+  const clearInputAndSearchState = useCallback(() => {
+    clearSearchInput()
+    dispatch(resetAppsSearchState())
+  }, [searchInputRef])
+
+  const clearButton = (): JSX.Element | null => {
+    if (!searchQuery) return null
+
+    return (
+      <IconButton
+        icon='close'
+        size={30}
+        style={iconButtonStyle}
+        iconColor={NEUTRAL_COLOR}
+        onPress={clearInputAndSearchState}
+        testID='search-input-clear-button'
+      />
+    )
+  }
+
+  const placeholderTextColor: string = useMemo(
+    () => (displayAllApps ? PRIMARY_COLOR : SECONDARY_COLOR),
+    [displayAllApps]
+  )
+
+  const onSubmit = () => {
+    // Reset app state
+    clearAndBlurSearchInput()
+    // Clean up state and launch app
+    dispatch(appLaunchFromSearch())
+  }
+
+  return (
+    <View style={styles.wrapper}>
+      <TextInput
+        testID='search-input'
+        ref={searchInputRef}
+        style={styles.searchInput}
+        placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
+        returnKeyType='go'
+        autoCapitalize='words'
+        onChangeText={onQueryChange}
+        onSubmitEditing={onSubmit}
+      />
+      {clearButton()}
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  searchInput: {
+    flex: 1,
+    color: NEUTRAL_COLOR,
+  },
+})
+
+export default Search
