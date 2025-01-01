@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 5,
     overflow: 'hidden',
-    marginTop: StatusBar.currentHeight,
+    // marginTop: StatusBar.currentHeight,
     justifyContent: 'flex-end',
   },
 })
