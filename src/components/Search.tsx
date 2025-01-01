@@ -92,7 +92,7 @@ const Search = () => {
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
         returnKeyType='go'
-        autoCapitalize='words'
+        autoCapitalize='wordss'
         onChangeText={onQueryChange}
         onSubmitEditing={onSubmit}
       />
